@@ -124,6 +124,12 @@ metadata:
   name: argo-events-sa
   namespace: argo-events
 ---
+  apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    name: argo-events
+    namespace: argo-events
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:

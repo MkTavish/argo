@@ -1,0 +1,58 @@
+apiVersion: argoproj.io/v1alpha1
+kind: EventSource
+metadata:
+  name: argo-webhook
+  namespace: argo-events
+spec:
+  webhook:
+    events:
+      port: "8443"
+      endpoing: /
+      method: POST
+      serverCertSecret:
+        name: certname-tls
+        key: certname.crt
+      serverKeySecret:
+        name: keyname-tls
+        key: keyname.key
+
+---
+apiVersion: v1
+kind: service
+metadata:
+  name: argo-webhook
+  namespace: argo-events
+spec:
+  type: ClusterIP
+  ports:
+  - name: https
+    port: 8443
+    targetPort: 8443
+  selector: argo-webhook
+
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: argo-events
+  namespace: argo-events
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/backent-protocol: HTTPS
+    alb.ingress.kubernetes.io/certificate-arn: arn:cert 
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/healthcheck-port: "8443"
+    alb.ingress.kubernetes.io/inboubd-cidr: 10.0.....
+    alb.ingress.kubernetes.io/ip-address-type: ipv4
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/subnets: subnet- 
+spec:
+  rules:
+  - http:
+      paths:
+      - backend:
+          serviceName: argo-webhook
+          servicePort: 8443
+        path: /*

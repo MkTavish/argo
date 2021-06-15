@@ -24,22 +24,35 @@ spec:
               metadata:
                 generateName: webhook-
               spec:
-                entrypoint: whalesay
+                entrypoint: test-workflow
                 arguments:
                   parameters:
-                  - name: message
-                    # the value will get overridden by event payload from test-dep
-                    value: hello world
+                  - name: repo
+                  - name: revision
+                  - name: name
+                  - name: branch
+
                 templates:
-                - name: whalesay
-                  inputs:
-                    parameters:
-                    - name: message
-                  container:
-                    image: docker/whalesay:latest
-                    command: [cowsay]
-                    args: ["{{inputs.parameters.message}}"]
-          parameters:
-            - src:
-                dependencyName: test-dep
-              dest: spec.arguments.parameters.0.value
+                - name: test-workflow
+                  steps:
+                  - - name: checkout
+                      template: checkout
+                  - - name: webhook
+                      template: webhook
+                      arguments:
+                        parameters:
+                        - name: webhook-template
+                          value: "{{steps.checkout.outputs.parameters.webhook-template}}"
+                        - name: webhook-name
+                          value: "{{webhook.name}}"
+                        - name: repo
+                          value: "{{workflow.parameters.repo}}"
+                        - name: revision
+                          value: "{{workflow.parameters.revision}}"
+                        - name: name
+                          value: "{{workflow.parameters.name}}"
+                        - name: branch
+                          value: "{{workflow.parameters.branch}}"
+                        artifacts:
+                        - name: source
+                          from: "{{steps.checkout.outputs.artifacts.source}}"

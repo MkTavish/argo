@@ -56,3 +56,70 @@ spec:
                         artifacts:
                         - name: source
                           from: "{{steps.checkout.outputs.artifacts.source}}"
+
+                - name: checkout
+                  inputs:
+                    artifacts:
+                    - name: source
+                      path: /src
+                      git:
+                        repo: "{{workflow.parameters.repo}}"
+                        revision: "{{workflow.parameters.revision}}"
+                        usernameSecret:
+                          name: github-creds
+                          key: usernameSecret
+                        passwordSecret:
+                          name: github-creds
+                          key: token
+                  outputs:
+                    artifacts:
+                    - name: source
+                      path: /src
+                      s3:
+                        key: "{{workflow.parameters.name}}_{{workflow.parameters.branch}}_{{workflow.parameters.revision}}_{{steps.checkout.outputs.artifacts.source}}"
+                    parameters:
+                    - name: test-workflow-template
+                      valueFrom:
+                        path: /src/.ci/workflow.yaml
+
+                - name: test-workflow
+                  inputs:
+                    parameters:
+                    - name: test-workflow-template
+                    - name: test-workflow-name
+                    - name: repo
+                    - name: revision
+                    - name: name
+                    - name: branch
+                  resource:
+                    action: create
+                    setOwnerReference: true
+                    manifest: |
+                      apiVersion: argoproj.io/a1apla1
+                      kind: Workflow
+                      metadata:
+                        generateName: {{inputs.parameters.test-workflow-name}}-
+                        namespace: argo
+                      spec: |
+                        {{inputs.parameters/test-workflow-template}}
+
+          parameters:
+            - src:
+                dependencyName: github-push
+                dataTemplate: "{{ .Input.body.repository.clone_url }}"
+              dest: spec.arguments.parameters.0.value
+            - src:
+                dependencyName: github-push
+                dataTemplate: "{{ .Input.body.after }}"
+              dest: spec.arguments.parameters.1.value
+            - src:
+                dependencyName: github-push
+                dataTemplate: "{{ .Input.body.repository.name }}"
+              dest: spec.arguments.parameters.2.value
+            - src:
+                dependencyName: github-push
+                dataTemplate: '{{ .Input.body.ref | replace "refs/heads/" "" }}'
+              dest: spec.arguments.parameters.3.value  
+                
+
+

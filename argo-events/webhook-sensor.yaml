@@ -6,9 +6,17 @@ spec:
   template:
     serviceAccountName: operate-workflow-sa
   dependencies:
-    - name: test-dep
+    - name: container-build-push
       eventSourceName: webhook
       eventName: example
+      filters:
+        data:
+          - path: body.ref
+            type: string
+            template: '{{ .Input | replace "refs/heads/" "" }}'
+            value:
+              - develop
+              - main
   triggers:
     - template:
         name: webhook-workflow-trigger
